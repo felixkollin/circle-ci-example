@@ -4,11 +4,11 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-@Category({TestCategoryA.class})
-public class TodoListTest {
+@Category({TestCategoryB.class})
+public class TaskTest {
 
     @Test
-    public void removeAllTest(){
+    public void createTaskTest(){
         Assert.assertFalse(false);
     }
 }

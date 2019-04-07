@@ -1,25 +1,87 @@
 version: 2 # use CircleCI 2.0
 jobs: # a collection of steps
-  build: # runs not using Workflows must have a `build` job as entry point
-    
-    working_directory: ~/circle-ci-example # directory where steps will run
 
+  # runs not using Workflows must have a `build` job as entry point
+
+  # We only want to checkout the code from the repo once in the workflow and cache the result
+  checkout_code:
     docker: # run the steps with Docker
       - image: circleci/openjdk:8-jdk-browsers # ...with this image as the primary container; this is where all `steps` will run
-
+    working_directory: ~/circle-ci-example # directory where steps will run
     steps: # a collection of executable commands
-
-      - checkout # check out source code to working directory
+      - checkout
+      - save_cache:
+          key: repo-{{ .Environment.CIRCLE_SHA1 }} # The SHA1 hash of the last commit of the current build
+          paths:
+            - ~/circle-ci-example
+  
+  # Compile the source and cache dependencies
+  compile:
+    working_directory: ~/circle-ci-example
+    docker:
+      - image: circleci/openjdk:8-jdk-browsers
+    steps:
+      - restore_cache:
+          keys:
+            - repo-{{ .Environment.CIRCLE_SHA1 }}
 
       - restore_cache: # restore the saved cache after the first run or if `pom.xml` has changed
-          # Read about caching dependencies: https://circleci.com/docs/2.0/caching/
-          key: assignment-1-{{ checksum "pom.xml" }}
-      
+          key: dependencies-{{ checksum "pom.xml" }}
       - run: mvn dependency:go-offline # gets the project dependencies
-      
       - save_cache: # saves the project dependencies
           paths:
             - ~/.m2
-          key: assignment-1-{{ checksum "pom.xml" }}
-      
-      - run: mvn package # run the actual tests
+          key: dependencies-{{ checksum "pom.xml" }}
+
+      - run: mvn compile # compile the source
+
+  testA:
+    working_directory: ~/circle-ci-example
+    docker:
+      - image: circleci/openjdk:8-jdk-browsers
+    steps:
+      - restore_cache:
+          keys:
+            - repo-{{ .Environment.CIRCLE_SHA1 }}
+            - dependencies-{{ checksum "pom.xml" }}
+      - run: mvn test -Dgroups="com.example.TestCategoryA" # run tests of category A
+
+  testB:
+    working_directory: ~/circle-ci-example
+    docker:
+      - image: circleci/openjdk:8-jdk-browsers
+    steps:
+      - restore_cache:
+          keys:
+            - repo-{{ .Environment.CIRCLE_SHA1 }}
+            - dependencies-{{ checksum "pom.xml" }}
+      - run: mvn test -Dgroups="com.example.TestCategoryB" # run tests of category B
+
+  build:
+    working_directory: ~/circle-ci-example
+    docker:
+      - image: circleci/openjdk:8-jdk-browsers
+    steps:
+      - restore_cache:
+          keys:
+            - repo-{{ .Environment.CIRCLE_SHA1 }}
+            - dependencies-{{ checksum "pom.xml" }}   
+      - run: mvn package # package the project to a jar
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - checkout_code
+      - compile:
+        requires:
+            - checkout_code
+      - testA:
+          requires:
+            - compile
+      - testB:
+          requires:
+            - compile
+      - build:
+          requires:
+            - test
