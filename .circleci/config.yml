@@ -1,4 +1,4 @@
-version: 2 # use CircleCI 2.0
+version: 2.0 # use CircleCI 2.0
 jobs: # a collection of steps
 
   # runs not using Workflows must have a `build` job as entry point
@@ -17,9 +17,9 @@ jobs: # a collection of steps
   
   # Compile the source and cache dependencies
   compile:
-    working_directory: ~/circle-ci-example
     docker:
       - image: circleci/openjdk:8-jdk-browsers
+    working_directory: ~/circle-ci-example
     steps:
       - restore_cache:
           keys:
@@ -36,9 +36,9 @@ jobs: # a collection of steps
       - run: mvn compile # compile the source
 
   testA:
-    working_directory: ~/circle-ci-example
     docker:
       - image: circleci/openjdk:8-jdk-browsers
+    working_directory: ~/circle-ci-example
     steps:
       - restore_cache:
           keys:
@@ -47,9 +47,9 @@ jobs: # a collection of steps
       - run: mvn test -Dgroups="com.example.TestCategoryA" # run tests of category A
 
   testB:
-    working_directory: ~/circle-ci-example
     docker:
       - image: circleci/openjdk:8-jdk-browsers
+    working_directory: ~/circle-ci-example
     steps:
       - restore_cache:
           keys:
@@ -58,9 +58,9 @@ jobs: # a collection of steps
       - run: mvn test -Dgroups="com.example.TestCategoryB" # run tests of category B
 
   build:
-    working_directory: ~/circle-ci-example
     docker:
       - image: circleci/openjdk:8-jdk-browsers
+    working_directory: ~/circle-ci-example
     steps:
       - restore_cache:
           keys:
@@ -74,7 +74,7 @@ workflows:
     jobs:
       - checkout_code
       - compile:
-        requires:
+          requires:
             - checkout_code
       - testA:
           requires:
