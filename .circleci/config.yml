@@ -84,4 +84,5 @@ workflows:
             - compile
       - build:
           requires:
-            - test
+            - testA
+            - testB
